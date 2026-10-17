@@ -15,6 +15,7 @@ done
 "$NODE" -e 'if (Number(process.versions.node.split(".")[0]) < 26) { console.error("Use Node.js 26 or newer; see docs/SETUP.md."); process.exit(2); }'
 "$PYTHON" "$ROOT/tests/check_hooks.py"
 "$PYTHON" "$ROOT/tests/check_config.py"
+"$PYTHON" "$ROOT/tests/check_public.py"
 "$PYTHON" "$ROOT/tests/check_build.py"
 "$PYTHON" "$ROOT/tests/check_avatar.py"
 "$PYTHON" "$ROOT/tests/check_serial_device.py"

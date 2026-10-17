@@ -10,6 +10,12 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 EXCLUDED = {'.git', '.build', 'node_modules', '__pycache__', '.venv'}
+DOC_IMAGES = {
+    'docs/images/assistant.png',
+    'docs/images/reply.png',
+    'docs/images/settings.png',
+    'docs/images/moods.png',
+}
 PATTERNS = {
     'personal home path': re.compile(r'/(?:Users|home)/[A-Za-z0-9_.-]+/'),
     'private key': re.compile(r'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----'),
@@ -56,6 +62,11 @@ def main():
         raw = path.read_bytes()
         if len(raw) > 2 * 1024 * 1024:
             problems.append(f'{name}: oversized source artifact')
+        # Only deliberately reviewed README exports may bypass the text scan.
+        if name in DOC_IMAGES:
+            if not raw.startswith(b'\x89PNG\r\n\x1a\n'):
+                problems.append(f'{name}: expected PNG documentation image')
+            continue
         try:
             source = raw.decode('utf-8')
         except UnicodeDecodeError:
