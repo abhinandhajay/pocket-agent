@@ -1,0 +1,26 @@
+{
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": false,
+    "[makefile]": {
+        "editor.insertSpaces": false,
+        "editor.formatOnSave": false
+    },
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "prettier.requireConfig": true,
+    "ruff.path": ["${workspaceFolder}/.build/python/bin/ruff"],
+    "C_Cpp.clang_format_style": "file",
+    "files.associations": {
+        "*.ino": "cpp"
+    },
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff"
+    },
+    "[c]": {
+        "editor.defaultFormatter": "ms-vscode.cpptools"
+    },
+    "[cpp]": {
+        "editor.defaultFormatter": "ms-vscode.cpptools"
+    }
+}

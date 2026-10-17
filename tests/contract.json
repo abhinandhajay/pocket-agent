@@ -1,0 +1,999 @@
+{
+    "schema": 1,
+    "name": "pocket-agent",
+    "title": "Pocket Agent",
+    "hardware": {
+        "board": "m5stack-stopwatch",
+        "width": 468,
+        "height": 466,
+        "offset_x": 6,
+        "offset_y": 0,
+        "rotation": 0,
+        "touch_map": "espt-touch/record"
+    },
+    "controls": {
+        "left_button": "BtnA",
+        "right_button": "BtnB",
+        "left": "previous_or_decrease",
+        "right": "next_or_increase",
+        "enter": "short_both",
+        "back": "hold_both_600ms",
+        "rationale": "Left/right acknowledge the Assistant (demo: styles). Short both acknowledges the active assistant (demo: next state). Hold both toggles manual sleep."
+    },
+    "state": {
+        "mode": {
+            "type": "enum",
+            "default": "demo",
+            "values": ["demo", "assistant"]
+        },
+        "active": {
+            "type": "enum",
+            "default": "none",
+            "values": ["none", "a"]
+        },
+        "a_state": {
+            "type": "enum",
+            "default": "none",
+            "values": ["none", "idle", "thinking", "tool", "error", "done", "waiting", "sleeping"]
+        },
+        "a_unseen": {
+            "type": "bool",
+            "default": false
+        },
+        "a_wince": {
+            "type": "bool",
+            "default": false
+        },
+        "a_age": {
+            "type": "enum",
+            "default": "fresh",
+            "values": ["fresh", "over_4s", "over_30s", "over_10m"]
+        },
+        "manual_sleep": {
+            "type": "bool",
+            "default": false
+        },
+        "demo_style": {
+            "type": "int",
+            "default": 0,
+            "min": 0,
+            "max": 7
+        },
+        "demo_mood": {
+            "type": "enum",
+            "default": "idle",
+            "values": [
+                "idle",
+                "thinking",
+                "working",
+                "waiting",
+                "blocked",
+                "done",
+                "surprised",
+                "sleeping",
+                "happy",
+                "curious",
+                "excited",
+                "sad"
+            ]
+        },
+        "mood": {
+            "type": "enum",
+            "default": "idle",
+            "values": [
+                "idle",
+                "thinking",
+                "working",
+                "waiting",
+                "blocked",
+                "done",
+                "surprised",
+                "sleeping",
+                "happy",
+                "curious",
+                "excited",
+                "sad"
+            ]
+        },
+        "emit": {
+            "type": "string",
+            "default": "",
+            "max_length": 16
+        },
+        "sound": {
+            "type": "enum",
+            "default": "none",
+            "values": ["none", "pop", "start", "chime", "wince", "uhoh"]
+        }
+    },
+    "scenarios": [
+        {
+            "name": "a second Assistant is rejected until the owner leaves",
+            "steps": [
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "tool"
+                    },
+                    "expect": {
+                        "mode": "assistant",
+                        "active": "a",
+                        "a_state": "tool",
+                        "mood": "working",
+                        "emit": "active a",
+                        "sound": "pop"
+                    }
+                },
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "b",
+                        "state": "done"
+                    },
+                    "expect": {
+                        "emit": "",
+                        "sound": "none",
+                        "active": "a",
+                        "mood": "working"
+                    }
+                },
+                {
+                    "action": {
+                        "type": "remove",
+                        "id": "b"
+                    },
+                    "expect": {
+                        "active": "a"
+                    }
+                },
+                {
+                    "action": "remove_all",
+                    "expect": {
+                        "mode": "demo",
+                        "active": "none",
+                        "a_state": "none",
+                        "mood": "idle"
+                    }
+                },
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "idle"
+                    },
+                    "expect": {
+                        "mode": "assistant",
+                        "active": "a",
+                        "a_state": "idle",
+                        "emit": "active a",
+                        "sound": "pop",
+                        "mood": "idle"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "first report becomes the active assistant",
+            "steps": [
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "idle"
+                    },
+                    "expect": {
+                        "mode": "assistant",
+                        "active": "a",
+                        "a_state": "idle",
+                        "emit": "active a",
+                        "sound": "pop",
+                        "mood": "idle"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "working Assistant think and use tools",
+            "steps": [
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "thinking"
+                    },
+                    "expect": {
+                        "mode": "assistant",
+                        "active": "a",
+                        "a_state": "thinking",
+                        "mood": "thinking",
+                        "emit": "active a",
+                        "sound": "pop"
+                    }
+                },
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "tool"
+                    },
+                    "expect": {
+                        "a_state": "tool",
+                        "mood": "working",
+                        "emit": "",
+                        "sound": "none"
+                    }
+                },
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "thinking"
+                    },
+                    "expect": {
+                        "a_state": "thinking",
+                        "mood": "thinking",
+                        "emit": ""
+                    }
+                }
+            ]
+        },
+        {
+            "name": "an error wince outlasts a quick follow-up state",
+            "steps": [
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "tool"
+                    },
+                    "expect": {
+                        "mode": "assistant",
+                        "active": "a",
+                        "a_state": "tool",
+                        "mood": "working",
+                        "emit": "active a",
+                        "sound": "pop"
+                    }
+                },
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "error"
+                    },
+                    "expect": {
+                        "a_state": "error",
+                        "a_unseen": true,
+                        "a_wince": true,
+                        "mood": "surprised",
+                        "emit": "",
+                        "sound": "wince"
+                    }
+                },
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "thinking"
+                    },
+                    "expect": {
+                        "a_state": "thinking",
+                        "sound": "none",
+                        "mood": "surprised"
+                    }
+                },
+                {
+                    "action": "advance_5s",
+                    "expect": {
+                        "a_wince": false,
+                        "a_age": "over_4s",
+                        "mood": "thinking"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "a settled error is blocked until acknowledged",
+            "steps": [
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "error"
+                    },
+                    "expect": {
+                        "mode": "assistant",
+                        "active": "a",
+                        "a_state": "error",
+                        "a_unseen": true,
+                        "a_wince": true,
+                        "mood": "surprised",
+                        "emit": "active a",
+                        "sound": "pop"
+                    }
+                },
+                {
+                    "action": "advance_5s",
+                    "expect": {
+                        "a_wince": false,
+                        "a_age": "over_4s",
+                        "mood": "blocked",
+                        "emit": "",
+                        "sound": "uhoh"
+                    }
+                },
+                {
+                    "action": "enter",
+                    "expect": {
+                        "a_unseen": false,
+                        "emit": "ack a",
+                        "sound": "none",
+                        "mood": "blocked"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "done celebrates then waits until acknowledged",
+            "steps": [
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "thinking"
+                    },
+                    "expect": {
+                        "mode": "assistant",
+                        "active": "a",
+                        "a_state": "thinking",
+                        "mood": "thinking",
+                        "emit": "active a",
+                        "sound": "pop"
+                    }
+                },
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "done"
+                    },
+                    "expect": {
+                        "a_state": "done",
+                        "a_unseen": true,
+                        "mood": "done",
+                        "emit": "",
+                        "sound": "chime"
+                    }
+                },
+                {
+                    "action": "advance_5s",
+                    "expect": {
+                        "a_age": "over_4s",
+                        "mood": "waiting",
+                        "sound": "none"
+                    }
+                },
+                {
+                    "action": "enter",
+                    "expect": {
+                        "a_unseen": false,
+                        "mood": "idle",
+                        "emit": "ack a"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "an unacknowledged done settles after thirty seconds",
+            "steps": [
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "done"
+                    },
+                    "expect": {
+                        "mode": "assistant",
+                        "active": "a",
+                        "a_state": "done",
+                        "a_unseen": true,
+                        "mood": "done",
+                        "emit": "active a",
+                        "sound": "pop"
+                    }
+                },
+                {
+                    "action": "advance_30s",
+                    "expect": {
+                        "a_age": "over_30s",
+                        "mood": "idle",
+                        "emit": "",
+                        "sound": "none",
+                        "a_unseen": true
+                    }
+                }
+            ]
+        },
+        {
+            "name": "repeated reports keep the state age",
+            "steps": [
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "done"
+                    },
+                    "expect": {
+                        "mode": "assistant",
+                        "active": "a",
+                        "a_state": "done",
+                        "a_unseen": true,
+                        "mood": "done",
+                        "emit": "active a",
+                        "sound": "pop"
+                    }
+                },
+                {
+                    "action": "advance_5s",
+                    "expect": {
+                        "a_age": "over_4s",
+                        "mood": "waiting",
+                        "emit": "",
+                        "sound": "none"
+                    }
+                },
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "done"
+                    },
+                    "expect": {
+                        "a_age": "over_4s",
+                        "mood": "waiting"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "manual sleep overrides the assistant until any page or acknowledge",
+            "steps": [
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "thinking"
+                    },
+                    "expect": {
+                        "mode": "assistant",
+                        "active": "a",
+                        "a_state": "thinking",
+                        "mood": "thinking",
+                        "emit": "active a",
+                        "sound": "pop"
+                    }
+                },
+                {
+                    "action": "hold",
+                    "expect": {
+                        "manual_sleep": true,
+                        "mood": "sleeping",
+                        "emit": "",
+                        "sound": "none"
+                    }
+                },
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "tool"
+                    },
+                    "expect": {
+                        "a_state": "tool",
+                        "mood": "sleeping"
+                    }
+                },
+                {
+                    "action": "enter",
+                    "expect": {
+                        "manual_sleep": false,
+                        "mood": "working",
+                        "emit": "ack a"
+                    }
+                },
+                {
+                    "action": "hold",
+                    "expect": {
+                        "manual_sleep": true,
+                        "mood": "sleeping",
+                        "emit": ""
+                    }
+                },
+                {
+                    "action": "right",
+                    "expect": {
+                        "manual_sleep": false,
+                        "mood": "working",
+                        "emit": "active a"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "idle Assistant doze after ten minutes",
+            "steps": [
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "idle"
+                    },
+                    "expect": {
+                        "mode": "assistant",
+                        "active": "a",
+                        "a_state": "idle",
+                        "emit": "active a",
+                        "sound": "pop"
+                    }
+                },
+                {
+                    "action": "advance_10m",
+                    "expect": {
+                        "a_age": "over_10m",
+                        "mood": "sleeping",
+                        "emit": "",
+                        "sound": "none"
+                    }
+                },
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "thinking"
+                    },
+                    "expect": {
+                        "a_state": "thinking",
+                        "a_age": "fresh",
+                        "mood": "thinking",
+                        "sound": "start"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "demo mode cycles bots and states",
+            "steps": [
+                {
+                    "action": "right",
+                    "expect": {
+                        "demo_style": 1
+                    }
+                },
+                {
+                    "action": "left",
+                    "expect": {
+                        "demo_style": 0
+                    }
+                },
+                {
+                    "action": "left",
+                    "expect": {
+                        "demo_style": 7
+                    }
+                },
+                {
+                    "action": "enter",
+                    "expect": {
+                        "demo_mood": "happy",
+                        "mood": "happy"
+                    }
+                },
+                {
+                    "action": "enter",
+                    "expect": {
+                        "demo_mood": "curious",
+                        "mood": "curious"
+                    }
+                },
+                {
+                    "action": "hold",
+                    "expect": {
+                        "demo_mood": "sleeping",
+                        "mood": "sleeping"
+                    }
+                },
+                {
+                    "action": "enter",
+                    "expect": {
+                        "demo_mood": "idle",
+                        "mood": "idle"
+                    }
+                },
+                {
+                    "action": "hold",
+                    "expect": {
+                        "demo_mood": "sleeping",
+                        "mood": "sleeping"
+                    }
+                },
+                {
+                    "action": "right",
+                    "expect": {
+                        "demo_style": 0,
+                        "demo_mood": "idle",
+                        "mood": "idle"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "transition sounds mark new sessions, run starts, completion, and errors",
+            "steps": [
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "idle"
+                    },
+                    "expect": {
+                        "mode": "assistant",
+                        "active": "a",
+                        "a_state": "idle",
+                        "emit": "active a",
+                        "sound": "pop"
+                    }
+                },
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "thinking"
+                    },
+                    "expect": {
+                        "a_state": "thinking",
+                        "mood": "thinking",
+                        "emit": "",
+                        "sound": "start"
+                    }
+                },
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "tool"
+                    },
+                    "expect": {
+                        "a_state": "tool",
+                        "mood": "working",
+                        "sound": "none"
+                    }
+                },
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "thinking"
+                    },
+                    "expect": {
+                        "a_state": "thinking",
+                        "mood": "thinking",
+                        "sound": "none"
+                    }
+                },
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "done"
+                    },
+                    "expect": {
+                        "a_state": "done",
+                        "a_unseen": true,
+                        "mood": "done",
+                        "sound": "chime"
+                    }
+                },
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "done"
+                    },
+                    "expect": {
+                        "sound": "none"
+                    }
+                },
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "tool"
+                    },
+                    "expect": {
+                        "a_state": "tool",
+                        "mood": "working",
+                        "sound": "start"
+                    }
+                },
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "error"
+                    },
+                    "expect": {
+                        "a_state": "error",
+                        "a_wince": true,
+                        "mood": "surprised",
+                        "sound": "wince"
+                    }
+                },
+                {
+                    "action": "advance_5s",
+                    "expect": {
+                        "a_wince": false,
+                        "a_age": "over_4s",
+                        "mood": "blocked",
+                        "sound": "uhoh"
+                    }
+                },
+                {
+                    "action": "advance_5s",
+                    "expect": {
+                        "sound": "none"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "a quick recovery from an error never says uh-oh",
+            "steps": [
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "tool"
+                    },
+                    "expect": {
+                        "mode": "assistant",
+                        "active": "a",
+                        "a_state": "tool",
+                        "mood": "working",
+                        "emit": "active a",
+                        "sound": "pop"
+                    }
+                },
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "error"
+                    },
+                    "expect": {
+                        "a_state": "error",
+                        "a_unseen": true,
+                        "a_wince": true,
+                        "mood": "surprised",
+                        "emit": "",
+                        "sound": "wince"
+                    }
+                },
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "thinking"
+                    },
+                    "expect": {
+                        "a_state": "thinking",
+                        "sound": "none"
+                    }
+                },
+                {
+                    "action": "advance_5s",
+                    "expect": {
+                        "a_wince": false,
+                        "a_age": "over_4s",
+                        "mood": "thinking",
+                        "sound": "none"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "manual sleep mutes transition sounds",
+            "steps": [
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "thinking"
+                    },
+                    "expect": {
+                        "mode": "assistant",
+                        "active": "a",
+                        "a_state": "thinking",
+                        "mood": "thinking",
+                        "emit": "active a",
+                        "sound": "pop"
+                    }
+                },
+                {
+                    "action": "hold",
+                    "expect": {
+                        "manual_sleep": true,
+                        "mood": "sleeping",
+                        "emit": "",
+                        "sound": "none"
+                    }
+                },
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "done"
+                    },
+                    "expect": {
+                        "a_state": "done",
+                        "a_unseen": true,
+                        "sound": "none",
+                        "mood": "sleeping"
+                    }
+                },
+                {
+                    "action": "enter",
+                    "expect": {
+                        "a_unseen": false,
+                        "manual_sleep": false,
+                        "mood": "done",
+                        "emit": "ack a",
+                        "sound": "none"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "the demo screensaver is silent, even on enter",
+            "steps": [
+                {
+                    "action": "enter",
+                    "expect": {
+                        "demo_mood": "thinking",
+                        "mood": "thinking",
+                        "sound": "none"
+                    }
+                },
+                {
+                    "action": "enter",
+                    "expect": {
+                        "demo_mood": "working",
+                        "mood": "working",
+                        "sound": "none"
+                    }
+                },
+                {
+                    "action": "enter",
+                    "expect": {
+                        "demo_mood": "waiting",
+                        "mood": "waiting",
+                        "sound": "none"
+                    }
+                },
+                {
+                    "action": "enter",
+                    "expect": {
+                        "demo_mood": "blocked",
+                        "mood": "blocked",
+                        "sound": "none"
+                    }
+                },
+                {
+                    "action": "enter",
+                    "expect": {
+                        "demo_mood": "done",
+                        "mood": "done",
+                        "sound": "none"
+                    }
+                }
+            ],
+            "given": {
+                "demo_mood": "surprised",
+                "mood": "surprised"
+            }
+        },
+        {
+            "name": "a silent hub clears the stale Assistant state into the screensaver",
+            "steps": [
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "tool"
+                    },
+                    "expect": {
+                        "mode": "assistant",
+                        "active": "a",
+                        "a_state": "tool",
+                        "mood": "working",
+                        "emit": "active a",
+                        "sound": "pop"
+                    }
+                },
+                {
+                    "action": "hub_silent_20s",
+                    "expect": {
+                        "mode": "demo",
+                        "active": "none",
+                        "a_state": "none",
+                        "mood": "idle",
+                        "emit": "",
+                        "sound": "none"
+                    }
+                },
+                {
+                    "action": {
+                        "type": "report",
+                        "id": "a",
+                        "state": "thinking"
+                    },
+                    "expect": {
+                        "mode": "assistant",
+                        "active": "a",
+                        "a_state": "thinking",
+                        "mood": "thinking",
+                        "emit": "active a",
+                        "sound": "pop"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "demo state cycle wraps after sad",
+            "steps": [
+                {
+                    "action": "enter",
+                    "expect": {
+                        "demo_mood": "idle",
+                        "mood": "idle"
+                    }
+                }
+            ],
+            "given": {
+                "demo_mood": "sad",
+                "mood": "sad"
+            }
+        }
+    ],
+    "layout": {
+        "safe_radius": 226,
+        "focus_inset": 3,
+        "controls": [
+            {
+                "id": "avatar_body",
+                "bounds": [102, 130, 264, 220]
+            },
+            {
+                "id": "session_name",
+                "bounds": [110, 376, 248, 28]
+            },
+            {
+                "id": "activity_line",
+                "bounds": [116, 405, 236, 24]
+            },
+            {
+                "id": "status_dot",
+                "bounds": [226, 430, 16, 16]
+            }
+        ]
+    },
+    "visual": {
+        "kind": "card",
+        "eyebrow": "POCKET AGENT",
+        "title": "Assistant",
+        "lines": ["your turn"],
+        "accent": "#1084FE",
+        "scenario": "done celebrates then waits until acknowledged",
+        "evidence": "reference"
+    }
+}

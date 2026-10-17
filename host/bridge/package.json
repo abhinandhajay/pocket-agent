@@ -1,0 +1,11 @@
+{
+    "name": "pocket-agent-bridge",
+    "private": true,
+    "type": "module",
+    "dependencies": {
+        "serialport": "13.0.0"
+    },
+    "version": "0.1.0",
+    "description": "Pocket Agent USB/Wi-Fi bridge and control utility",
+    "license": "MIT"
+}

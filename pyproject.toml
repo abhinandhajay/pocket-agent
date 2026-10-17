@@ -1,0 +1,34 @@
+[project]
+name = "pocket-agent"
+version = "0.1.0"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.12"
+
+[dependency-groups]
+# Avatar derivation and optional device capture, plus the shared formatters.
+dev = [
+    { include-group = "format" },
+    "numpy==2.3.5",
+    "shapely==2.1.2",
+    "svgpathtools==1.7.1",
+    "pyserial==3.5",
+    "Pillow==12.3.0",
+]
+# Portable checks need no avatar or hardware dependencies.
+format = ["ruff==0.17.0"]
+
+[tool.uv]
+package = false
+cache-dir = ".build/uv-cache"
+
+[tool.ruff]
+indent-width = 4
+line-length = 100
+target-version = "py312"
+cache-dir = ".build/ruff-cache"
+
+[tool.ruff.format]
+indent-style = "space"
+quote-style = "preserve"
+line-ending = "lf"
